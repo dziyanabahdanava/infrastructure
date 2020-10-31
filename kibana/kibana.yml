@@ -1,0 +1,5 @@
+elasticsearch.hosts: [ "http://elasticsearch:9300" ]
+monitoring.ui.container.elasticsearch.enabled: true
+
+elasticsearch.username: elastic
+elasticsearch.password: changeme

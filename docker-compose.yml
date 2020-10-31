@@ -1,11 +1,67 @@
 version: '3.4'
+
 networks:
-  lan:
+  ms:
+
 services:
   consul:
     image: consul:1.1.0
     hostname: localhost
     networks:
-      - lan
+      - ms
     ports:
       - 8500:8500
+
+  logstash:
+    container_name: logstash
+    image: docker.elastic.co/logstash/logstash:7.9.2
+    networks:
+      - ms
+    environment:
+      XPACK_MONITORING_ENABLED: "false"
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    ports:
+      - 5046:5046
+    volumes:
+      - ./config/logstash.yml:/usr/share/logstash/config/logstash.yml
+      - ./config/pipelines.yml:/usr/share/logstash/config/pipelines.yml:ro
+      - ./config/pipelines:/usr/share/logstash/config/pipelines:ro
+    depends_on:
+      - elasticsearch
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.2
+    container_name: elasticsearch
+    networks:
+      - ms
+    environment:
+      ELASTIC_PASSWORD: changeme
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.9.2
+    networks:
+      - ms
+    ports:
+      - "5601:5601"
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml
+    depends_on:
+      - elasticsearch
+
+  uaa:
+    image: scg-demo-uaa:latest
+    container_name: uaa
+    expose:
+      - "8090"
+    ports:
+      - "8090:8090"
